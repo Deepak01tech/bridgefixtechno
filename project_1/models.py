@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from xmlrpc.client import DateTime
 from typing import List, Optional
 from xmlrpc.client import DateTime
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Enum, Integer, String
 from .database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
@@ -16,6 +16,8 @@ class User(Base):
     name = Column(String(255), index=True)
     email = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
+
+    role = Column(Enum("user", "admin"), default="user")
 
     # posts = relationship("Post", back_populates="owner")
     posts = relationship("Post", back_populates="owner", cascade="all, delete")

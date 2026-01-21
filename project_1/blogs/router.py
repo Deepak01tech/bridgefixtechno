@@ -21,11 +21,22 @@ def create_blog(post: schemas.PostCreate, db: Session = Depends(get_db)):
         title=post.title,
         content=post.content,
         owner_id=get_current_user.id
+
     )
+    # print("NEW POST OWNER ID:", new_post.owner_id)
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     return new_post
+
+@router.get("/posts/me")
+def get_my_posts(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(models.Post).filter(
+        models.Post.owner_id == current_user.id
+    ).all()
 
 @router.get("/blogs/{post_id}", response_model=schemas.PostResponse, dependencies=[Depends(get_current_user)])
 def read_blog(post_id: int, db: Session = Depends(get_db)):

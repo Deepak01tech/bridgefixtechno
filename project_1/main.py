@@ -11,6 +11,7 @@ from .database import engine, get_db
 from .auth import (
     authenticate_user,
     create_access_token,
+    get_current_admin_user,
     get_current_user,
     get_password_hash,
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -33,7 +34,18 @@ def read_root():
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: Union[str, None] = None):
     return {"item_id": item_id, "q": q}
+# ------------------------------------users--------------------------------------
+# =====================================ADMIN ROUTES=======================================
+@app.get("/admin/users/", dependencies=[Depends(get_current_admin_user)], tags=["admin"])
+def read_all_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    return db.query(models.User).offset(skip).limit(limit).all()
+# =======================================
 
+
+# =================all blog posts=========================
+@app.get("/admin/posts/", dependencies=[Depends(get_current_admin_user)], tags=["admin"])
+def read_all_posts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    return db.query(models.Post).offset(skip).limit(limit).all()
 
 # =====================
 # SIGNUP (PUBLIC)
