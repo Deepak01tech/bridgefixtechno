@@ -15,7 +15,7 @@ from . import models
 # =====================
 SECRET_KEY = "your_key"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 86400  # 60 days
 
 # =====================
 # SECURITY

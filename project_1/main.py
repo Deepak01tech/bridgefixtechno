@@ -4,6 +4,7 @@ from typing import Union
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from .blogs import router as blogs
 
 from . import models, schemas
 from .database import engine, get_db
@@ -14,13 +15,13 @@ from .auth import (
     get_password_hash,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-
+ 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.include_router(
-    prefix="/blog",
-    router=models.router,
+    # prefix="/blog"/,
+    router=blogs.router,
 )
 
 
@@ -37,7 +38,7 @@ def read_item(item_id: int, q: Union[str, None] = None):
 # =====================
 # SIGNUP (PUBLIC)
 # =====================
-@app.post("/signup", response_model=schemas.User)
+@app.post("/auth/signup", response_model=schemas.User, tags=["auth"])
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
@@ -57,7 +58,7 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
 # =====================
 # LOGIN → JWT
 # =====================
-@app.post("/token")
+@app.post("/auth/token", tags=["auth"])
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
