@@ -15,19 +15,23 @@ def read_blogs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     blogs = db.query(models.Post).offset(skip).limit(limit).all()
     return blogs
 
-@router.post("/blogs/", response_model=schemas.PostResponse, dependencies=[Depends(get_current_user)])
-def create_blog(post: schemas.PostCreate, db: Session = Depends(get_db)):
+@router.post("/blogs/", response_model=schemas.PostResponse)
+def create_blog(
+    post: schemas.PostCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     new_post = models.Post(
         title=post.title,
         content=post.content,
-        owner_id=get_current_user.id
-
+        owner_id=current_user.id
     )
-    # print("NEW POST OWNER ID:", new_post.owner_id)
+
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     return new_post
+
 
 @router.get("/posts/me")
 def get_my_posts(
