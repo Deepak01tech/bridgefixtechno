@@ -2,7 +2,7 @@ from  datetime import datetime
 from typing import List, Optional
 from xmlrpc.client import DateTime
 from project_1.database import Base
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 class UserBase(BaseModel):
     
@@ -53,7 +53,16 @@ class PostResponse(BaseModel):
     owner_id: int
     created_at: datetime
     updated_at: datetime
-    tags: List[str] = []
+    tags: List[str] 
+    @field_validator("tags", mode="before")
+    @classmethod
+    def convert_tags(cls, v):
+        if v is None or v == "":
+            return []
+        if isinstance(v, str):
+            return [tag.strip() for tag in v.split(",")]
+        return v
+    
 
     class Config:
         from_attributes = True

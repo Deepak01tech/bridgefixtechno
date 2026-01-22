@@ -31,13 +31,13 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+# @app.get("/items/{item_id}")
+# def read_item(item_id: int, q: Union[str, None] = None):
+#     return {"item_id": item_id, "q": q}
 # ------------------------------------users--------------------------------------
 # =====================================ADMIN ROUTES=======================================
 @app.get("/admin/users/", dependencies=[Depends(get_current_admin_user)], tags=["admin"])
-def read_all_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def read_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(models.User).offset(skip).limit(limit).all()
 # =======================================
 
@@ -98,20 +98,67 @@ def read_users_me(current_user=Depends(get_current_user)):
     return current_user
 
 
-@app.get("/users/", dependencies=[Depends(get_current_user)])
-def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return db.query(models.User).offset(skip).limit(limit).all()
+@app.get("/admin/me")
+def read_admin_me(current_user=Depends(get_current_admin_user)):
+    return current_user
 
 
-@app.put("/users/{user_id}", response_model=schemas.User, dependencies=[Depends(get_current_user)])
+# @app.put("/users/{user_id}", response_model=schemas.User, dependencies=[Depends(get_current_user)])
+# def update_user(
+#     user_id: int,
+#     user: schemas.UserUpdate,
+#     db: Session = Depends(get_db),
+# ):
+#     db_user = db.query(models.User).filter(models.User.id == user_id).first()
+#     if not db_user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     if user.name is not None:
+#         db_user.name = user.name
+
+#     if user.email is not None:
+#         db_user.email = user.email
+
+#     if user.password is not None:
+#         db_user.hashed_password = get_password_hash(user.password)  # ✅ hash ONCE
+
+#     db.commit()
+#     db.refresh(db_user)
+#     return db_user
+
+@app.put("/users/{user_id}", response_model=schemas.User)
 def update_user(
     user_id: int,
     user: schemas.UserUpdate,
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
+    
+    if user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to update this user"
+        )
+
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # EMAIL UNIQUENESS CHECK
+    if user.email and user.email != db_user.email:
+        email_exists = db.query(models.User).filter(
+            models.User.email == user.email,
+            models.User.id != user_id
+        ).first()
+
+        if email_exists:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already in use"
+            )
+
+        db_user.email = user.email
 
     if user.name is not None:
         db_user.name = user.name
@@ -120,19 +167,43 @@ def update_user(
         db_user.email = user.email
 
     if user.password is not None:
-        db_user.hashed_password = get_password_hash(user.password)  # ✅ hash ONCE
+        db_user.hashed_password = get_password_hash(user.password)
 
     db.commit()
     db.refresh(db_user)
     return db_user
 
 
-@app.delete("/users/{user_id}", dependencies=[Depends(get_current_user)])
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+# @app.delete("/users/{user_id}", dependencies=[Depends(get_current_user)])
+# def delete_user(user_id: int, db: Session = Depends(get_db)):
+#     db_user = db.query(models.User).filter(models.User.id == user_id).first()
+#     if not db_user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     db.delete(db_user)
+#     db.commit()
+#     return {"detail": "User deleted"}
+
+@app.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    # User can delete ONLY itself
+    if user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to delete this user"
+        )
+
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     db.delete(db_user)
     db.commit()
-    return {"detail": "User deleted"}
+
+    return {"detail": "User deleted successfully"}
+

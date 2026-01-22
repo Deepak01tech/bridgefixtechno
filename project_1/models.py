@@ -29,6 +29,9 @@ class Post(Base):
     title = Column(String(255), index=True)
     content = Column(String(255))
     owner_id = Column(Integer, ForeignKey("users.id"))
+    # tags = Column(String(255), nullable=False, default="")
+    tags = Column(String(255), default="")
+ # Comma-separated tags
 
     owner = relationship("User", back_populates="posts")
 
